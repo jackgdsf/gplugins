@@ -1,35 +1,58 @@
 # CHANGELOG
 
-## [Unreleased](https://github.com/gdsfactory/gplugins/compare/v2.0.1...main)
+## [Unreleased](https://github.com/gdsfactory/gplugins/compare/v2.1.4...main)
 
 <!-- towncrier release notes start -->
 
+## [2.1.4](https://github.com/gdsfactory/gplugins/releases/tag/v2.1.4) - 2026-08-13
+- Lumerical S-parameter simulations no longer require the active PDK to define a ``PADDING`` layer. [#762](https://github.com/gdsfactory/gplugins/issues/762)
+- Lumerical simulations now materialize LayerStack background layers without requiring a PDK ``PADDING`` layer. [#763](https://github.com/gdsfactory/gplugins/issues/763)
+- Lumerical simulations now keep optical ports on layers absent from the simulation LayerStack. [#764](https://github.com/gdsfactory/gplugins/issues/764)
+- Lumerical mode ports on layers absent from the simulation LayerStack now use the component vertical extent. [#765](https://github.com/gdsfactory/gplugins/issues/765)
+
+## [2.1.3](https://github.com/gdsfactory/gplugins/releases/tag/v2.1.3) - 2026-08-12
+- Use the published meshwell 2.1.1 release for the Femwell and meshwell extras. [#760](https://github.com/gdsfactory/gplugins/issues/760)
+- Prevent tbump from modifying dependency constraints during package version bumps. [#761](https://github.com/gdsfactory/gplugins/issues/761)
+
+## [2.1.2](https://github.com/gdsfactory/gplugins/releases/tag/v2.1.2) - 2026-08-12
+
+- fix: support canonical material aliases [#759](https://github.com/gdsfactory/gplugins/pull/759)
+- build(deps): bump actions/setup-python from 6 to 7 [#748](https://github.com/gdsfactory/gplugins/pull/748)
+- rename deprecated generic_tech to gpdk [#752](https://github.com/gdsfactory/gplugins/pull/752)
+- fix: follow symlinks in nbdocs so notebook pages render [#744](https://github.com/gdsfactory/gplugins/pull/744)
+- fix: use tqdm.auto for proper notebook progress bar rendering [#751](https://github.com/gdsfactory/gplugins/pull/751)
+- fix: remove duplicated summary pages from docs nav [#747](https://github.com/gdsfactory/gplugins/pull/747)
+- fix: resolve docs/notebooks symlink so notebook pages render [#745](https://github.com/gdsfactory/gplugins/pull/745)
+- Add EMode plugin [#733](https://github.com/gdsfactory/gplugins/pull/733)
+- Fix broken documentation URLs [#741](https://github.com/gdsfactory/gplugins/pull/741)
+
+## [2.1.1](https://github.com/gdsfactory/gplugins/releases/tag/v2.1.1) - 2026-07-25
+
+- Migrate docs from Jupyter Book to zensical [#737](https://github.com/gdsfactory/gplugins/pull/737)
+- fix(gmeep): activate generic PDK in MPI subprocess script [#720](https://github.com/gdsfactory/gplugins/pull/720)
+- fix: replace dead SAX docs link in sax_01_sax notebook [#726](https://github.com/gdsfactory/gplugins/pull/726)
+- build(deps): bump conda-incubator/setup-miniconda from 3 to 4 [#721](https://github.com/gdsfactory/gplugins/pull/721)
+- build(deps): bump release-drafter/release-drafter from 6 to 7 [#722](https://github.com/gdsfactory/gplugins/pull/722)
+- build(deps): bump tornado from 6.5.5 to 6.5.6 in the uv group across 1 directory [#727](https://github.com/gdsfactory/gplugins/pull/727)
+- build(deps): bump starlette from 1.0.0 to 1.0.1 in the uv group across 1 directory [#725](https://github.com/gdsfactory/gplugins/pull/725)
+- build(deps): bump conda-incubator/setup-miniconda from 3 to 4 [#721](https://github.com/gdsfactory/gplugins/pull/721)
+- build(deps): bump aiohttp from 3.13.5 to 3.14.0 in the uv group across 1 directory [#724](https://github.com/gdsfactory/gplugins/pull/724)
+- build(deps): bump release-drafter/release-drafter from 6 to 7 [#722](https://github.com/gdsfactory/gplugins/pull/722)
+- build(deps-dev): update sax requirement from ~=0.17.0 to >=0.17,<0.19 [#723](https://github.com/gdsfactory/gplugins/pull/723)
+- build(deps): bump the uv group across 1 directory with 5 updates [#719](https://github.com/gdsfactory/gplugins/pull/719)
+- build(deps-dev): update pyvista requirement from <=0.48.2 to <=0.48.4 [#717](https://github.com/gdsfactory/gplugins/pull/717)
+
 ## [2.1.0](https://github.com/gdsfactory/gplugins/releases/tag/v2.1.0) - 2026-05-17
 
-
-### Removed
-
 - Remove meshing module [#670](https://github.com/gdsfactory/gplugins/pull/670) [#670](https://github.com/gdsfactory/gplugins/issues/670)
-
-
-### Added
-
 - Allow 2D meep simulations in X- or Y-normal direction [#672](https://github.com/gdsfactory/gplugins/pull/672) [#672](https://github.com/gdsfactory/gplugins/issues/672)
 - Check mesh order in LayerLevel.info instead of LayerLevel.mesh_order in meshwell [#681](https://github.com/gdsfactory/gplugins/pull/681) [#681](https://github.com/gdsfactory/gplugins/issues/681)
 - Add target_neff parameter to mode solver and track_modes to sweep_bend_mismatch [#716](https://github.com/gdsfactory/gplugins/pull/716) [#716](https://github.com/gdsfactory/gplugins/issues/716)
-
-
-### Changed
-
 - Clean up get_meep_geometry_from_component [#671](https://github.com/gdsfactory/gplugins/pull/671) [#671](https://github.com/gdsfactory/gplugins/issues/671)
 - Rewrite patch_netlist for flat or recursive cases [#675](https://github.com/gdsfactory/gplugins/pull/675) [#675](https://github.com/gdsfactory/gplugins/issues/675)
 - Bump tidy3d to version >= 2.10 and fix meow/sax incompatibility [#698](https://github.com/gdsfactory/gplugins/pull/698) [#698](https://github.com/gdsfactory/gplugins/issues/698)
 - Bump sax to ~=0.17.0 [#715](https://github.com/gdsfactory/gplugins/pull/715) [#715](https://github.com/gdsfactory/gplugins/issues/715)
 - Use lossless SiO2 by default [#716](https://github.com/gdsfactory/gplugins/pull/716) [#717](https://github.com/gdsfactory/gplugins/issues/717)
-
-
-### Fixed
-
 - Fix gmeep caching: remove kfactory metadata from hashing [#679](https://github.com/gdsfactory/gplugins/pull/679) [#679](https://github.com/gdsfactory/gplugins/issues/679)
 - Use TemporaryDirectory while hashing gds files to avoid multi-process race conditions [#682](https://github.com/gdsfactory/gplugins/pull/682) [#682](https://github.com/gdsfactory/gplugins/issues/682)
 - Add mode settings to hashed parameters [#683](https://github.com/gdsfactory/gplugins/pull/683) [#683](https://github.com/gdsfactory/gplugins/issues/683)

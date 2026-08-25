@@ -11,7 +11,7 @@ import numpy as np
 import yaml
 from gdsfactory import logger
 from gdsfactory.config import __version__
-from gdsfactory.generic_tech.simulation_settings import (
+from gdsfactory.gpdk.simulation_settings import (
     SIMULATION_SETTINGS_LUMERICAL_FDTD,
     SimulationSettingsLumericalFdtd,
 )
@@ -34,6 +34,73 @@ run=False returns the simulation session for you to debug and make sure it is co
 
 To compute the Sparameters you need to pass run=True
 """
+
+_MATERIAL_NAME_ALIASES = {
+    "Si": "si",
+    "SiO2": "sio2",
+    "SiN": "sin",
+}
+
+
+def _add_material_name_aliases(
+    material_mapping: dict[str, MaterialSpec],
+) -> None:
+    """Add missing canonical or legacy aliases without overriding mappings."""
+    for canonical_name, legacy_name in _MATERIAL_NAME_ALIASES.items():
+        if canonical_name in material_mapping:
+            material_mapping.setdefault(legacy_name, material_mapping[canonical_name])
+        elif legacy_name in material_mapping:
+            material_mapping[canonical_name] = material_mapping[legacy_name]
+
+
+def _get_component_with_background_layers(
+    component: gf.Component, layer_stack: LayerStack
+) -> gf.Component:
+    """Materialize LayerStack background layers for simulation export.
+
+    Background layers occupy the component bounding box minus their declared
+    source-layer exclusions. ``get_component_with_derived_layers`` evaluates
+    derived layers but does not apply this background-layer semantics.
+    """
+    component_with_derived_layers = layer_stack.get_component_with_derived_layers(
+        component
+    )
+    if not any(
+        getattr(level, "background", False) for level in layer_stack.layers.values()
+    ):
+        return component_with_derived_layers
+
+    from kfactory import kdb
+
+    for level in layer_stack.layers.values():
+        if not getattr(level, "background", False):
+            continue
+
+        layer = level.layer
+        if isinstance(layer, LogicalLayer):
+            target_layer = gf.get_layer_tuple(layer.layer)
+        elif isinstance(layer, DerivedLayer):
+            assert level.derived_layer is not None
+            target_layer = gf.get_layer_tuple(level.derived_layer.layer)
+        elif isinstance(layer, tuple):
+            target_layer = layer
+        else:
+            raise ValueError(
+                f"Layer {layer!r} is not a DerivedLayer, LogicalLayer, or tuple"
+            )
+
+        background = kdb.Region(component.kdb_cell.bbox())
+        for excluded_layer in getattr(level, "background_exclude_layers", ()):
+            excluded_layer_tuple = gf.get_layer_tuple(excluded_layer)
+            excluded_layer_index = component.kcl.layer(*excluded_layer_tuple)
+            background -= kdb.Region(
+                component.kdb_cell.begin_shapes_rec(excluded_layer_index)
+            )
+
+        component_with_derived_layers.remove_layers([target_layer])
+        component_with_derived_layers.add_polygon(background, layer=target_layer)
+
+    return component_with_derived_layers
 
 
 def set_material(session, structure: str, material: MaterialSpec) -> None:
@@ -211,7 +278,6 @@ def write_sparameters_lumerical(
     ymargin_top = ymargin_top or ymargin
     ymargin_bot = ymargin_bot or ymargin
 
-    layer_to_thickness = layer_stack.get_layer_to_thickness()
     layer_to_zmin = layer_stack.get_layer_to_zmin()
     layer_to_material = layer_stack.get_layer_to_material()
 
@@ -229,18 +295,11 @@ def write_sparameters_lumerical(
     sim_settings.update(**settings)
     ss = SimulationSettingsLumericalFdtd(**sim_settings)
 
-    component_with_booleans = layer_stack.get_component_with_derived_layers(component)
-    component_with_padding = gf.add_padding_container(
-        component_with_booleans,
-        default=0,
-        top=ymargin_top,
-        bottom=ymargin_bot,
-        left=xmargin_left,
-        right=xmargin_right,
+    component_with_booleans = _get_component_with_background_layers(
+        component, layer_stack
     )
-
     component_extended = gf.components.extend_ports(
-        component_with_padding, length=ss.distance_monitors_to_pml
+        component_with_booleans, length=ss.distance_monitors_to_pml
     )
 
     ports = component.ports.filter(port_type="optical")
@@ -275,10 +334,10 @@ def write_sparameters_lumerical(
         print(run_false_warning)
 
     logger.info(f"Writing Sparameters to {filepath_npz.absolute()!r}")
-    x_min = (component_extended.xmin - xmargin) * 1e-6
-    x_max = (component_extended.xmax + xmargin) * 1e-6
-    y_min = (component_extended.ymin - ymargin) * 1e-6
-    y_max = (component_extended.ymax + ymargin) * 1e-6
+    x_min = (component_extended.xmin - xmargin_left) * 1e-6
+    x_max = (component_extended.xmax + xmargin_right) * 1e-6
+    y_min = (component_extended.ymin - ymargin_bot) * 1e-6
+    y_max = (component_extended.ymax + ymargin_top) * 1e-6
 
     index_to_thickness = {}
     index_to_zmin = {}
@@ -379,6 +438,7 @@ def write_sparameters_lumerical(
     material_name_to_lumerical_new = material_name_to_lumerical or {}
     material_name_to_lumerical = ss.material_name_to_lumerical.copy()
     material_name_to_lumerical.update(**material_name_to_lumerical_new)
+    _add_material_name_aliases(material_name_to_lumerical)
 
     material = material_name_to_lumerical[ss.background_material]
     set_material(session=s, structure="clad", material=material)
@@ -452,8 +512,14 @@ def write_sparameters_lumerical(
 
     for i, port in enumerate(ports):
         port_layer_index = gf.get_layer(port.layer)
-        zmin = index_to_zmin[port_layer_index]
-        thickness = index_to_thickness[port_layer_index]
+        zmin = index_to_zmin.get(port_layer_index, component_zmin)
+        thickness = index_to_thickness.get(port_layer_index, component_thickness)
+        if port_layer_index not in index_to_thickness:
+            logger.warning(
+                "Port %r is on a layer not defined in the layer stack; using the "
+                "component vertical extent for its mode port",
+                port.name,
+            )
         z = (zmin + thickness) / 2
         zspan = 2 * ss.port_margin + thickness
 

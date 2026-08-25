@@ -1,4 +1,4 @@
-# gplugins 2.1.0
+# gplugins 2.1.4
 
 [![docs](https://github.com/gdsfactory/gplugins/actions/workflows/pages.yml/badge.svg)](https://gdsfactory.github.io/gplugins/)
 [![PyPI](https://img.shields.io/pypi/v/gplugins)](https://pypi.org/project/gplugins/)
@@ -28,6 +28,7 @@ Run simulations with GDSFactory by installing plugins.
         - Tidy3d
         - Femwell
         - MPB
+        - `EMode` Finite Difference Method (FDM) mode solver with EME propagation (commercial).
     - TCAD
         - `devsim` TCAD device simulator.
 - Circuit simulations
